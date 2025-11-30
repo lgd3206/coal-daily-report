@@ -1,14 +1,14 @@
 import os
-  import requests
-  from datetime import datetime
+import requests
+from datetime import datetime
 
   # 从 GitHub Secrets 传进来的环境变量里取
-  WEBHOOK = os.environ["WECHAT_WEBHOOK"]
-  XAI_API_KEY = os.environ["XAI_API_KEY"]
+WEBHOOK = os.environ["WECHAT_WEBHOOK"]
+XAI_API_KEY = os.environ["XAI_API_KEY"]
 
-  url = "https://api.x.ai/v1/chat/completions"
+url = "https://api.x.ai/v1/chat/completions"
 
-  payload = {
+payload = {
       "model": "grok-beta",
       "temperature": 0.2,
       "messages": [{
@@ -20,23 +20,23 @@ import os
               "控制1000字以内，用中文"
           )
       }],
-  }
+}
 
-  headers = {
+headers = {
       "Authorization": f"Bearer {XAI_API_KEY}",
       "Content-Type": "application/json",
-  }
+}
 
-  try:
+try:
       r = requests.post(url, json=payload, headers=headers, timeout=40)
       print("x.ai status:", r.status_code)
       print("x.ai body:", r.text)  # 调试时看具体返回
       r.raise_for_status()
       content = r.json()["choices"][0]["message"]["content"]
-  except Exception as e:
+except Exception as e:
       content = f"情报生成失败：{e}\n请稍后重试或联系管理员"
 
-  data = {
+data = {
       "msgtype": "markdown",
       "markdown": {
           "content": (
@@ -45,7 +45,7 @@ import os
               f"{content}\n\n> 永久免费 | 每日8点"
           )
       },
-  }
+}
 
-  requests.post(WEBHOOK, json=data)
-  print("豪华版日报已发送")
+requests.post(WEBHOOK, json=data)
+print("豪华版日报已发送")

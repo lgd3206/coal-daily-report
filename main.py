@@ -5,7 +5,7 @@ WEBHOOK = "https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=ebd19a11-21db-43
 
 # ←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←
 # 改成我这个中转，GitHub 100%能通
-url = "https://grok.lgd3206.eu.org/v1/chat/completions"
+url = "https://api.x.ai/v1/chat/completions"
 # ←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←
 
 payload = {

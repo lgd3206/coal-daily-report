@@ -1,4 +1,5 @@
 name: Daily Report
+on:
     schedule:
       - cron: '0 0 * * *'  # UTC 0:00 = 北京 8:00
     workflow_dispatch:      # 手动触发用

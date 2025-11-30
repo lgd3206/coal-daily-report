@@ -47,6 +47,7 @@ prompt = (
 payload = {
     "model": "grok-3",
     "temperature": 0.2,
+    "max_tokens": 1000,  # 控制生成长度，大约千字左右
     "messages": [
         {"role": "user", "content": prompt}
     ],
@@ -73,7 +74,10 @@ content = (
     .get("message", {})
     .get("content", f"情报生成失败：{resp.status_code} {resp.text}")
 )
-
+# 企业微信 markdown.content 最大 4096 字节，这里按字符粗略限制
+  MAX_LEN = 3800
+  if len(content) > MAX_LEN:
+      content = content[:MAX_LEN] + "\n\n（内容过长，已截断显示）"
 # 发送到企业微信群
 wechat_data = {
     "msgtype": "markdown",

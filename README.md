@@ -1,0 +1,1 @@
+# coal-daily-report

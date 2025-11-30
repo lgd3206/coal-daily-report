@@ -1,0 +1,13 @@
+name: Daily Report
+on:
+  schedule:
+    - cron: '0 0 * * *'  # UTC 0:00 = 北京8:00
+jobs:
+  send:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-python@v4
+        with: {python-version: '3.11'}
+      - run: pip install requests
+      - run: python main.py

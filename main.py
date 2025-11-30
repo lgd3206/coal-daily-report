@@ -9,7 +9,7 @@ XAI_API_KEY = os.environ["XAI_API_KEY"]
 url = "https://api.x.ai/v1/chat/completions"
 
 payload = {
-      "model": "grok-beta",
+      "model": "grok-3",
       "temperature": 0.2,
       "messages": [{
           "role": "user",

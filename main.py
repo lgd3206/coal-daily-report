@@ -10,7 +10,8 @@ URL = "https://api.x.ai/v1/chat/completions"
 
 # 构造优化版提示词
 now_str = datetime.now().strftime('%Y年%m月%d日 %H:%M')
-prompt = f"""现在北京时间{now_str}，你必须严格按照以下规则生成《中国煤化工日度情报简报》（2025年12月{now_str.split()[0].split('-')[2]}日版）。
+day_str = datetime.now().strftime('%d')
+prompt = f"""现在北京时间{now_str}，你必须严格按照以下规则生成《中国煤化工日度情报简报》（2025年12月{day_str}日版）。
 
 【核心铁律 - 必须100%遵守，否则视为生成失败】
 1. 绝对禁止使用训练数据、记忆或任何旧知识，所有2025年12月的数据必须通过实时工具（web_search、browse_page）从下面指定的网站获取。
@@ -74,7 +75,6 @@ web_search query="煤化工 OR 尿素 OR 甲醇 环保 OR 能耗双控 OR 产能
 
 全文控制在900字以内，语言极简，数据优先，无任何修饰性语言。
 """
-)
 
 # 调用 x.ai 生成情报
 payload = {

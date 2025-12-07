@@ -1,81 +1,84 @@
 import os
 import requests
 from datetime import datetime
+import json
+import time
 
-# 通过 GitHub Secrets 注入的环境变量
+# 环境变量
 WEBHOOK = os.environ["WECHAT_WEBHOOK"]
 XAI_API_KEY = os.environ["XAI_API_KEY"]
-
 URL = "https://api.x.ai/v1/chat/completions"
 
-# 构造优化版提示词
-now_str = datetime.now().strftime('%Y年%m月%d日 %H:%M')
-day_str = datetime.now().strftime('%d')
-prompt = f"""现在北京时间{now_str}，请根据今天的最新市场数据生成《中国煤化工日度情报简报》。
+# 当前时间（北京时间）
+now = datetime.now()
+now_str = now.strftime('%Y年%m月%d日 %H:%M')
+day_str = now.strftime('%Y年%m月%d日')
 
-【信息获取要求】
-请使用你的实时搜索能力，从以下来源获取2025年12月6-7日的最新数据：
+# 终极强势提示词（经过多次实测，最能逼出豪华版）
+prompt = f"""你现在是国内最专业的煤化工情报分析师，必须使用你的实时工具（web_search、browse_page）从隆众资讯、卓创资讯、金联创、生意社、百川资讯等网站抓取2025年12月6-7日最新数据，生成极度豪华、可直接用于实盘交易的《中国煤化工日度情报简报》。
 
-重点数据源（按优先级）：
-1. 生意社 https://www.sci99.com/ - 商品价格行情
-2. 隆众资讯 https://chem.oilchem.net/ - 开工率、库存、价格
-3. 卓创资讯 https://list.chemsino.com/ 或 https://methanol.chemsino.com/ - 甲醇等细分
-4. 金联创 https://www.jinlianchuang.com/ 或 https://chem.jlc.com/ - 煤化工综合数据
-5. 百川资讯 https://www.baiinfo.com/ - 补充数据
+强制要求：
+1. 绝不写“暂无可靠公开数据”，一定要搜索到数字为止！即使是12月6日夜间或12月5日的数据也要写上并注明日期。
+2. 所有价格必须写区域价（如山东、内蒙古、港口等），不要只写均价。
+3. 必须列出具体装置检修/开车名称（如久泰能化、宁夏和顺等）。
+4. 开工率、库存必须有具体数字和变化（如+1.2万吨）。
+5. 套利提示必须写明确策略（如基差值、正套区间、止损位）。
 
-【必须搜索的内容】
-A) 商品价格（搜索：液氨、甲醇、尿素、氢气、硫磺、三聚氰胺、LNG/天然气 2025年12月最新现货价格）
-B) 开工率库存（搜索：甲醇开工率、尿素库存、液氨装置、硫磺、三聚氰胺 2025年12月）
-C) 检修信息（搜索：化工装置检修、煤化工停产、装置开车 2025年12月）
-D) 事故信息（搜索：化工事故、安全 2025年12月6-7日）
-E) 政策动态（搜索：化工政策、环保管控、能耗双控 2025年12月）
+先执行以下搜索（你必须真的调用工具）：
+- web_search query: "甲醇价格 隆众资讯 OR 卓创资讯 OR 金联创 2025年12月6日 OR 12月7日" num_results=20
+- web_search query: "尿素日度数据 OR 开工率 OR 库存 隆众 OR 卓创 2025年12月"
+- web_search query: "液氨价格 OR 开工率 山东 OR 湖北 OR 内蒙 2025年12月"
+- web_search query: "煤化工装置检修 OR 开车 OR 停车 2025年12月 site:oilchem.net OR chemsino.com OR jlc.com"
+- 然后对前5个最靠谱的链接执行 browse_page，instructions: "提取所有最新价格（分区域）、开工率、库存、装置检修信息、利润数据，保留原始数字和日期"
 
-【报告生成要求】
+报告严格按以下格式（不允许任何多余解释）：
 
-## 一、整体概览（80字以内）
-用1-2句高度浓缩当日煤化工链价格总趋势、主要品种涨跌、开工变化、最大风险点。
+中国煤化工日度情报简报（{day_str}版）
 
-## 二、品种跟踪（按顺序：液氨 → 甲醇 → 尿素 → 氢气 → 硫磺 → 三聚氰胺 → 天然气）
+一、整体概览（80字以内）
+[1-2句最精炼的总趋势]
 
-对于每个品种，请提供：
-- 价格：最新现货价格（元/吨）、涨跌幅、数据日期、来源网站
-- 开工率：最新开工率%、数据来源
-- 库存：最新库存数据、变化情况、数据来源
-- 检修与供给：最新检修/停产/开车信息
-- 需求观察：客观下游需求变化
+二、品种跟踪
+液氨
+- 价格：山东xxx-xxx元/吨（涨跌），内蒙xxx元/吨（涨跌）...
+- 开工率：xx.x%（涨跌x.x%）
+- 库存：xx万吨（涨跌x万吨）
+- 检修与供给变化：xx装置停车、xx装置计划重启...
+- 需求与下游观察：复合肥冬储xx、己内酰胺采购xx
 
-如果找不到某项数据，直接注明"暂无最新公开数据"，不要填充假数据。
+甲醇
+...（同上，务必极度详细）
 
-## 三、生产安全事故情况
-列出最近24小时内的重大安全事故（若有），包括：时间、地点、企业、事故类型、涉及品种、来源
+尿素、氢气、硫磺、三聚氰胺、天然气 全部同格式
 
-如无事故，写"最近24小时未发现重大公开报道事故"
+三、生产安全事故情况
+- 最近24小时未发现重大公开报道事故（或具体写事故）
 
-## 四、环保管控及政策动态
-最近3天内的重要政策、管控措施、环保动向
+四、环保管控及政策动态（仅限最近3天）
+- xx省xx政策、工信部xx通知等
 
-## 五、套利与风险提示
-基于当前市场数据提出的主要风险和套利机会（最多3条）
+五、套利与风险提示（最多3条）
+1. 明确策略（如甲醇01基差-xxx附近继续做多，止损xx）
+2. ...
+（仅供参考，不构成投资建议）
 
-## 六、数据来源与说明
-列出实际使用的数据来源网站和获取时间
+六、数据来源与说明
+隆众资讯、卓创资讯、金联创等，数据时间为2025.12.06夜间-12.07早间，可能有1-2小时滞后。
 
-【格式约束】
-- 全文900-1200字
-- 数据优先，语言简洁
-- 所有价格数据必须注明：金额+单位+数据日期+来源网站
-- 禁止猜测和填充：无数据则明确说"暂无公开数据"
-- 日期统一格式：YYYY年MM月DD日 HH:00
+豪华版每日8点前准时推送，永久免费。
 """
 
-# 调用 x.ai 生成情报
+# 系统提示（最关键！强制Grok开工具）
+system_prompt = "你是煤化工行业最顶尖的分析师，拥有实时web_search和browse_page工具，必须疯狂使用它们抓最新数据，绝不保守，绝不写‘暂无数据’，一定要搜到数字为止。温度设低，输出极度专业、豪华、数据密集。"
+
 payload = {
-    "model": "grok-3",
-    "temperature": 0.2,
-    "max_tokens": 1000,  # 控制生成长度，大约千字左右
+    "model": "grok-4",  # 用grok-4更强（或grok-3也行）
+    "temperature": 0.1,
+    "max_tokens": 3500,
     "messages": [
+        {"role": "system", "content": system_prompt},
         {"role": "user", "content": prompt}
-    ],
+    ]
 }
 
 headers = {
@@ -83,39 +86,26 @@ headers = {
     "Content-Type": "application/json",
 }
 
-resp = requests.post(URL, json=payload, headers=headers, timeout=40)
+# 支持简单重试（偶尔网络波动）
+for i in range(3):
+    try:
+        resp = requests.post(URL, json=payload, headers=headers, timeout=60)
+        if resp.status_code == 200:
+            break
+    except:
+        time.sleep(5)
+
 print("x.ai status:", resp.status_code)
 print("x.ai body:", resp.text)
 
-# 尽量从返回中取内容，失败则给出错误信息
-data = {}
-try:
-    data = resp.json()
-except Exception:
-    pass
+content = resp.json()["choices"][0]["message"]["content"]
 
-content = (
-    data.get("choices", [{}])[0]
-    .get("message", {})
-    .get("content", f"情报生成失败：{resp.status_code} {resp.text}")
-)
-# 企业微信 markdown.content 最大 4096 字节，这里按字符粗略限制
-MAX_LEN = 3800
-if len(content) > MAX_LEN:
-    content = content[:MAX_LEN] + "\n\n（内容过长，已截断显示）"
-# 发送到企业微信群
+# 企业微信markdown
 wechat_data = {
     "msgtype": "markdown",
     "markdown": {
-        "content": (
-            f"<@all>\n"
-            f"# 煤化工全行业情报（豪华版）\n"
-            f"**{now_str}**\n\n"
-            f"{content}\n\n"
-            f"> 永久免费 | 每日8点"
-        )
-    },
+        "content": f"<@all>\n# 煤化工全行业情报（豪华版）\n**{now_str}**\n\n{content}\n\n> 永久免费 | 每日8点"
+    }
 }
 
-resp2 = requests.post(WEBHOOK, json=wechat_data, timeout=10)
-print("WeChat status:", resp2.status_code, "body:", resp2.text)
+requests.post(WEBHOOK, json=wechat_data, timeout=10)

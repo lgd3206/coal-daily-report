@@ -87,6 +87,7 @@ headers = {
 }
 
 # 支持简单重试（偶尔网络波动）
+resp = None
 for i in range(3):
     try:
         resp = requests.post(URL, json=payload, headers=headers, timeout=60)
